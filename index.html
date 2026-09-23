@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="version" content="20.0-iv-ev-level-nature">
+<title>Promax 心金存檔編輯器 v20</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#07101f;color:#f5f7fb;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}
+header{padding:20px 16px 14px;background:#0d1729;border-bottom:1px solid #273755;position:sticky;top:0;z-index:5}
+h1{font-size:23px;margin:0 0 5px}.sub{font-size:13px;color:#9daac1}.wrap{max-width:980px;margin:auto;padding:14px}
+.toolbar,.actions{display:flex;gap:8px;flex-wrap:wrap}.btn,.filebtn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #31466b;border-radius:12px;background:#172541;color:#fff;padding:11px 14px;font-size:15px}.primary{background:#1968d2}.good{background:#13844e}.danger{background:#8d2630}
+.filebtn input{display:none}.status{margin:12px 0;padding:12px;border:1px solid #2b3d61;border-radius:13px;background:#111b30;color:#bdc9df}.status.ok{border-color:#2e8b61}
+.tabs{display:flex;gap:8px;overflow:auto;padding:4px 0 10px}.tab{white-space:nowrap}.tab.active{background:#1769d1}
+.card{background:#101a2e;border:1px solid #2a3d62;border-radius:16px;padding:14px;margin:10px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.field label{display:block;color:#aebbd2;font-size:12px;margin:0 0 5px}.field input,.field select{width:100%;padding:10px;border-radius:9px;border:1px solid #33496f;background:#091225;color:#fff;font-size:15px}
+.slotgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.slot{text-align:left;border:1px solid #2d4165;border-radius:12px;background:#0a1427;color:#fff;padding:10px;min-height:72px}.slot.sel{border-color:#438ff4;background:#102851}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.muted{color:#92a1ba}.small{font-size:12px}.pill{display:inline-block;border-radius:999px;background:#1c2b47;padding:4px 8px;color:#b8d0ff;font-size:12px}
+.hidden{display:none}.pokehead{display:flex;align-items:center;gap:12px;background:#0b1528;border:1px solid #2d4165;border-radius:14px;padding:10px;margin:10px 0}.pokeimg{width:72px;height:72px;object-fit:contain}.slotimg{width:48px;height:48px;object-fit:contain;vertical-align:middle}.name{font-size:18px;font-weight:700}.idline{font-size:11px;color:#8190aa}
+.notice{font-size:13px;line-height:1.6;color:#c6d0e2}@media(max-width:560px){.grid{grid-template-columns:1fr}.slotgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><h1>🎮 Promax 心金存檔編輯器 v20</h1><div class="sub">HGSS・iPhone Safari・IV／EV／等級／性格・特性 PID 同步・資料只在你的裝置處理</div></header>
+<div class="wrap">
+<div class="toolbar"><label class="filebtn primary">📂 選擇存檔<input id="file" type="file"></label><button id="export" class="btn good" disabled>💾 匯出存檔</button><button id="reset" class="btn" disabled>↩️ 還原</button></div>
+<div id="status" class="status">v20 IV／EV＋等級＋性格版｜請選擇 HGSS 512 KB 存檔。</div>
+<div id="app" class="hidden"><div class="tabs"><button class="btn tab active" data-tab="party">⚔️ 隊伍</button><button class="btn tab" data-tab="boxes">📦 PC盒子</button></div>
+<section id="party"></section><section id="boxes" class="hidden"></section></div></div>
+<script>
+const PS=0x40000,SSTART=0xF700,ORDER=['ABCD','ABDC','ACBD','ACDB','ADBC','ADCB','BACD','BADC','BCAD','BCDA','BDAC','BDCA','CABD','CADB','CBAD','CBDA','CDAB','CDBA','DABC','DACB','DBAC','DBCA','DCAB','DCBA'];
+let data=null,original=null,fileName='',sel={type:'party',i:0},box=0;
+const $=s=>document.querySelector(s),u16=(a,o)=>a[o]|a[o+1]<<8,u32=(a,o)=>((a[o]|a[o+1]<<8|a[o+2]<<16|a[o+3]<<24)>>>0);
+function w16(a,o,v){a[o]=v&255;a[o+1]=v>>>8&255} function w32(a,o,v){a[o]=v&255;a[o+1]=v>>>8&255;a[o+2]=v>>>16&255;a[o+3]=v>>>24&255}
+function crypt(buf,seed){let a=new Uint8Array(buf);for(let i=0;i<128;i+=2){seed=(Math.imul(0x41C64E6D,seed)+0x6073)>>>0;let x=seed>>>16;a[i]^=x&255;a[i+1]^=x>>>8}return a}
+function decryptStored(enc){let d=new Uint8Array(enc),pid=u32(d,0),chk=u16(d,6),sh=crypt(d.slice(8,136),chk),sv=((pid>>>13)&31)%24,out=new Uint8Array(136);let ord=ORDER[sv];for(let i=0;i<4;i++)out.set(sh.slice(i*32,i*32+32),8+(ord.charCodeAt(i)-65)*32);out.set(d.slice(0,8),0);return out}
+function encryptStored(dec){let d=new Uint8Array(dec),pid=u32(d,0),chk=u16(d,6),sv=((pid>>>13)&31)%24,sh=new Uint8Array(128),ord=ORDER[sv];for(let i=0;i<4;i++){let src=ord.charCodeAt(i)-65;sh.set(d.slice(8+src*32,8+src*32+32),i*32)}sh=crypt(sh,chk);d.set(sh,8);return d}
+function checksumPK(pk){let s=0;for(let o=8;o<136;o+=2)s=(s+u16(pk,o))&65535;return s} function fixPK(pk){w16(pk,6,checksumPK(pk))}
+function pkOff(t,i){return t==='party'?0x98+i*236:SSTART+Math.floor(i/30)*0x1000+(i%30)*136}
+function getPK(t,i,base=0){return decryptStored(data.slice(base+pkOff(t,i),base+pkOff(t,i)+136))}
+function setPK(t,i,pk){for(const base of [0,PS])data.set(encryptStored(new Uint8Array(pk)),base+pkOff(t,i))}
+function species(pk){return u16(pk,8)} function present(pk){return species(pk)>0&&species(pk)<494&&u32(pk,0)!==0}
+function ivs(pk){let v=u32(pk,0x38);return[v&31,v>>>5&31,v>>>10&31,v>>>15&31,v>>>20&31,v>>>25&31]}
+const NATURES=['勤奮','怕寂寞','勇敢','固執','頑皮','大膽','坦率','悠閒','淘氣','樂天','膽小','急躁','認真','爽朗','天真','內斂','慢吞吞','冷靜','害羞','馬虎','溫和','溫順','自大','慎重','浮躁'];
+let names=[];
+async function loadNames(){try{names=await fetch('https://raw.githubusercontent.com/sindresorhus/pokemon/main/data/zh-hant.json',{cache:'force-cache'}).then(r=>r.json())}catch(e){}}
+function pname(id){return names[id-1]||('寶可夢 #'+id)}
+function sprite(id,sh=false){return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-iv/heartgold-soulsilver/${sh?'shiny/':''}${id}.png`}
+function field(label,key,v,min=0,max=65535){return `<div class="field"><label>${label}</label><input data-k="${key}" type="number" value="${v}" min="${min}" max="${max}"></div>`}
+function natureOf(pid){return pid%25}
+function setNature(pk,n){let old=u32(pk,0),tid=u16(pk,12),sid=u16(pk,14),slot=old&1,sh=((old>>>16)^(old&65535)^tid^sid)<8;for(let tries=0;tries<300000;tries++){let hi=(Math.random()*65536)|0,lo=(Math.random()*65536)|0;if((lo&1)!==slot)continue;let pid=((hi<<16)|lo)>>>0;if(pid%25!==n)continue;let x=((hi^(lo)^tid^sid)&65535);if(sh?x>=8:x<8)continue;w32(pk,0,pid);return true}return false}
+function setAbilitySlot(pk,slot){let old=u32(pk,0),tid=u16(pk,12),sid=u16(pk,14),nature=old%25,sh=((old>>>16)^(old&65535)^tid^sid)<8;for(let tries=0;tries<300000;tries++){let hi=(Math.random()*65536)|0,lo=(Math.random()*65536)|0;if((lo&1)!==slot)continue;let pid=((hi<<16)|lo)>>>0;if(pid%25!==nature)continue;let x=((hi^lo^tid^sid)&65535);if(sh?x>=8:x<8)continue;w32(pk,0,pid);return true}return false}
+function expForLevel(l){return Math.floor(l*l*l)}
+function levelFromExp(e){for(let l=100;l>=1;l--)if(expForLevel(l)<=e)return l;return 1}
+function edit(t,i){let pk=getPK(t,i),sp=species(pk),exists=present(pk),iv=ivs(pk),ev=[...pk.slice(0x18,0x1e)],nature=natureOf(u32(pk,0)),level=levelFromExp(u32(pk,0x10));
+return `<div class="card"><div class="pokehead">${exists?`<img class="pokeimg" src="${sprite(sp, false)}">`:''}<div><div class="name">${exists?pname(sp):'空位'}</div><div class="idline">#${sp||0}${nature!==undefined?' · 性格：'+NATURES[nature]:''}</div></div></div>
+<div class="grid">${field('等級','level',level,1,100)}${field('EXP','exp',u32(pk,0x10),0,4294967295)}${field('親密度','friend',pk[0x14],0,255)}</div>
+<div class="card"><b>IV</b><div class="grid3">${['HP','攻擊','防禦','速度','特攻','特防'].map((n,j)=>field(n,'iv'+j,iv[j],0,31)).join('')}</div></div>
+<div class="card"><b>EV</b><div class="grid3">${['HP','攻擊','防禦','速度','特攻','特防'].map((n,j)=>field(n,'ev'+j,ev[j],0,255)).join('')}</div></div>
+<div class="field"><label>性格</label><select data-k="nature">${NATURES.map((n,j)=>`<option value="${j}" ${j===nature?'selected':''}>${n}</option>`).join('')}</select></div>
+<div class="actions"><button class="btn" onclick="maxIV('${t}',${i})">⭐ 一鍵 6V</button><button class="btn" onclick="clearEV('${t}',${i})">🧹 清除 EV</button><button class="btn primary" onclick="applyEdit('${t}',${i})">✅ 套用</button></div></div>`}
+function renderParty(){let h='<div class="card"><b>目前隊伍：'+(data[0x94]||0)+'/6</b><div class="slotgrid" style="margin-top:10px">';for(let i=0;i<6;i++){let pk=getPK('party',i),sp=species(pk),ok=present(pk);h+=`<button class="slot ${sel.type==='party'&&sel.i===i?'sel':''}" onclick="pick('party',${i})">${ok?`<img class="slotimg" src="${sprite(sp)}">`:''}<b>第${i+1}格</b><br>${ok?pname(sp):'空'}</button>`}h+='</div></div>';if(sel.type==='party')h+=edit('party',sel.i);$('#party').innerHTML=h}
+function renderBoxes(){let h='<div class="card"><div class="row"><b>PC 盒子 '+(box+1)+'</b><select id="boxsel">'+Array.from({length:18},(_,i)=>`<option value="${i}" ${i===box?'selected':''}>盒子 ${i+1}</option>`).join('')+'</select></div><div class="slotgrid" style="margin-top:10px">';for(let j=0;j<30;j++){let i=box*30+j,pk=getPK('box',i),sp=species(pk),ok=present(pk);h+=`<button class="slot ${sel.type==='box'&&sel.i===i?'sel':''}" onclick="pick('box',${i})">${ok?`<img class="slotimg" src="${sprite(sp)}">`:''}<b>${j+1}</b><br>${ok?pname(sp):'空'}</button>`}h+='</div></div>';if(sel.type==='box')h+=edit('box',sel.i);$('#boxes').innerHTML=h;$('#boxsel').onchange=e=>{box=+e.target.value;renderBoxes()}}
+function render(){renderParty();renderBoxes()}
+function pick(t,i){sel={type:t,i};if(t==='box')box=Math.floor(i/30);render();show(t==='box'?'boxes':'party')}
+window.pick=pick;
+window.maxIV=(t,i)=>{let pk=getPK(t,i);if(!present(pk))return;w32(pk,0x38,(u32(pk,0x38)&0xC0000000)|0x3FFFFFFF);fixPK(pk);setPK(t,i,pk);render();msg('已設為 6V。')}
+window.clearEV=(t,i)=>{let pk=getPK(t,i);if(!present(pk))return;for(let j=0;j<6;j++)pk[0x18+j]=0;fixPK(pk);setPK(t,i,pk);render();msg('已清除全部 EV。')}
+window.applyEdit=(t,i)=>{let root=t==='party'?$('#party'):$('#boxes'),f={};root.querySelectorAll('[data-k]').forEach(e=>f[e.dataset.k]=+e.value);let pk=getPK(t,i);if(!present(pk)){crypto.getRandomValues(pk);w32(pk,0,(Math.random()*0xffffffff)>>>0);w16(pk,12,u16(data,0x74));w16(pk,14,u16(data,0x76));}
+let lv=Math.max(1,Math.min(100,f.level||1));w32(pk,0x10,expForLevel(lv));pk[0x14]=f.friend&255;
+let v=(f.iv0&31)|((f.iv1&31)<<5)|((f.iv2&31)<<10)|((f.iv3&31)<<15)|((f.iv4&31)<<20)|((f.iv5&31)<<25);w32(pk,0x38,v>>>0);
+for(let j=0;j<6;j++)pk[0x18+j]=Math.max(0,Math.min(255,f['ev'+j]||0));let sum=[0,1,2,3,4,5].reduce((a,j)=>a+pk[0x18+j],0);if(sum>510){let over=sum-510;for(let j=0;j<6&&over;j++){let cut=Math.min(pk[0x18+j],over);pk[0x18+j]-=cut;over-=cut}}
+if(!setNature(pk,f.nature)){msg('性格 PID 產生失敗，請再試一次。');return}fixPK(pk);setPK(t,i,pk);if(t==='party'){data[0x94]=Math.max(data[0x94]||0,i+1);data[PS+0x94]=data[0x94]}render();msg('IV／EV／等級／性格已套用。')}
+function show(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));['party','boxes'].forEach(id=>$('#'+id).classList.toggle('hidden',id!==t))}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+function msg(s){$('#status').textContent=s;$('#status').classList.add('ok')}
+$('#file').onchange=e=>{let f=e.target.files?.[0];if(!f)return;fileName=f.name;let r=new FileReader();r.onload=async()=>{if(r.result.byteLength!==0x80000){msg('需要 512 KB HGSS 存檔，目前 '+Math.round(r.result.byteLength/1024)+' KB。');return}data=new Uint8Array(r.result);original=data.slice();$('#app').classList.remove('hidden');$('#export').disabled=false;$('#reset').disabled=false;await loadNames();render();msg('已載入 '+fileName+'。可編輯 IV、EV、等級、性格。')};r.readAsArrayBuffer(f)}
+$('#reset').onclick=()=>{data=original.slice();render();msg('已還原。')}
+$('#export').onclick=()=>{let b=new Blob([data],{type:'application/octet-stream'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='promax_v20_edited.dsv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);msg('已匯出 v20 存檔。')}
+</script></body></html>
