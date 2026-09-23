@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="version" content="11.0-item-select"><title>Promax 心金 PKHeX Style v27</title><style>
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="version" content="11.0-item-select"><title>Promax 心金 PKHeX Full v28</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#07101f;color:#f5f7fb;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif}header{padding:20px 16px 14px;background:#0d1729;border-bottom:1px solid #273755;position:sticky;top:0;z-index:5}h1{font-size:23px;margin:0 0 5px}.sub{font-size:13px;color:#9daac1}.wrap{max-width:980px;margin:auto;padding:14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.btn,.filebtn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #31466b;border-radius:12px;background:#172541;color:#fff;padding:11px 14px;font-size:15px}.primary{background:#1968d2;border-color:#3988ee}.good{background:#13844e;border-color:#25bd70}.btn:disabled{opacity:.45}.filebtn input{display:none}.status{margin:12px 0;padding:12px;border:1px solid #2b3d61;border-radius:13px;background:#111b30;color:#bdc9df}.status.ok{border-color:#2e8b61}.status.bad{border-color:#a14b55}.tabs{display:flex;gap:8px;overflow:auto;padding:4px 0 10px}.tab{white-space:nowrap}.tab.active{background:#1769d1}.card{background:#101a2e;border:1px solid #2a3d62;border-radius:16px;padding:14px;margin:10px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.field label{display:block;color:#aebbd2;font-size:12px;margin:0 0 5px}.field input,.field select{width:100%;padding:10px;border-radius:9px;border:1px solid #33496f;background:#091225;color:#fff;font-size:15px}.slotgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.slot{width:100%;text-align:left;border:1px solid #2d4165;border-radius:12px;background:#0a1427;color:#fff;padding:10px;min-height:72px}.slot.sel{border-color:#438ff4;background:#102851}.row{display:flex;align-items:center;justify-content:space-between;gap:8px}.muted{color:#92a1ba}.small{font-size:12px}.pill{display:inline-block;border-radius:999px;background:#1c2b47;padding:4px 8px;color:#b8d0ff;font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.danger{background:#8d2630;border-color:#bd4854}.hidden{display:none}.notice{font-size:13px;line-height:1.6;color:#c6d0e2}.boxbar{display:flex;gap:8px;align-items:center}.boxbar select{background:#0b1528;color:#fff;border:1px solid #33496f;border-radius:9px;padding:9px}.search{width:100%;padding:11px;border-radius:10px;border:1px solid #33496f;background:#091225;color:#fff;font-size:15px}@media(max-width:560px){.grid{grid-template-columns:1fr}.slotgrid{grid-template-columns:repeat(2,1fr)}}
 
 .pokehead{display:flex;align-items:center;gap:12px;background:#0b1528;border:1px solid #2d4165;border-radius:14px;padding:10px;margin:10px 0}.pokeimg{width:72px;height:72px;object-fit:contain;image-rendering:auto}.slotimg{width:48px;height:48px;object-fit:contain;vertical-align:middle}.name{font-size:18px;font-weight:700}.idline{font-size:11px;color:#8190aa}.lookup{display:flex;gap:7px;align-items:center}.lookup input{flex:1}.hint{font-size:12px;color:#9aa8bf;margin-top:4px}.resource{display:flex;align-items:center;gap:8px;margin-top:5px;min-height:24px}.resourceinput{display:flex;gap:7px;align-items:center}.resourceinput input{flex:1}.idtag{font-size:11px;color:#8190aa;white-space:nowrap}.resource img{width:32px;height:32px;object-fit:contain}.searchrow{display:flex;gap:8px}.searchrow input{flex:1}.resultlist{max-height:220px;overflow:auto;border:1px solid #304566;border-radius:10px;margin-top:7px}.resultitem{padding:9px 10px;border-bottom:1px solid #233552;background:#0b1528}.resultitem:last-child{border-bottom:0}.resultitem:active{background:#17305a}.statgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.stat{background:#0b1528;border:1px solid #293d60;border-radius:9px;padding:7px;text-align:center}.stat b{display:block;font-size:12px}.stat span{font-size:13px;color:#d9e3f5}@media(max-width:560px){.statgrid{grid-template-columns:repeat(3,1fr)}}
@@ -46,36 +46,40 @@ PKHeX 是 GPL-3.0 專案；本頁不是 PKHeX 官方程式，而是依其公開 
 </div>
 <div class="toolbar"><label class="filebtn primary">📂 選擇存檔<input id="file" type="file"></label><button id="export" class="btn good" disabled>💾 匯出存檔</button><button id="reset" class="btn" disabled>↩️ 還原</button></div>
 </div>
-<div id="status" class="status">v27｜PKHeX Core 規格取向・HGSS Gen4 讀寫＋一鍵建立｜請選擇 <b>promax.dsv</b>。如果檔案可以看到但不能點，這版不限制副檔名，直接選即可。</div>
+<div id="status" class="status">v28｜PKHeX Core 規格取向・HGSS Gen4 讀寫＋一鍵建立｜請選擇 <b>promax.dsv</b>。如果檔案可以看到但不能點，這版不限制副檔名，直接選即可。</div>
 
 <div id="quickGen" class="card" style="margin-bottom:12px">
-  <div class="row"><div><b>⚡ 一鍵建立寶可夢</b><div class="muted small">接近 PKHeX「新增 Pokémon」的快速建立流程。</div></div><span class="pill">v26</span></div>
+  <div class="row"><div><b>⚡ Pokémon Builder / PKHeX Full</b><div class="muted small">HGSS 完整編輯工作區：建立、修改、複製、清空、匯出。</div></div><span class="pill">v28</span></div>
   <div class="grid" style="margin-top:12px">
-    <div class="field"><label>放置位置</label>
-      <select id="qDest" onchange="toggleQuickDest()">
-        <option value="party">隊伍</option><option value="pc">PC 盒子</option>
-      </select>
-    </div>
-    <div class="field" id="qPartyWrap"><label>隊伍格</label>
-      <select id="qTarget">
-        <option value="0">第 1 格</option><option value="1">第 2 格</option><option value="2">第 3 格</option>
-        <option value="3">第 4 格</option><option value="4">第 5 格</option><option value="5">第 6 格</option>
-      </select>
-    </div>
+    <div class="field"><label>放置位置</label><select id="qDest" onchange="toggleQuickDest()"><option value="party">隊伍</option><option value="pc">PC 盒子</option></select></div>
+    <div class="field" id="qPartyWrap"><label>隊伍格</label><select id="qTarget"><option value="0">第 1 格</option><option value="1">第 2 格</option><option value="2">第 3 格</option><option value="3">第 4 格</option><option value="4">第 5 格</option><option value="5">第 6 格</option></select></div>
     <div class="field hidden" id="qBoxWrap"><label>PC 格子</label><select id="qBox"></select></div>
     <div class="field"><label>寶可夢</label><input id="qSpecies" list="species-list" placeholder="例如：皮卡丘 或 25"></div>
+    <div class="field"><label>暱稱</label><input id="qNickname" maxlength="10" placeholder="留白＝使用寶可夢名稱"></div>
     <div class="field"><label>等級</label><input id="qLevel" type="number" min="1" max="100" value="100"></div>
     <div class="field"><label>性格</label><select id="qNature"></select></div>
     <div class="field"><label>特性</label><select id="qAbility"><option value="auto">自動選第1特性</option><option value="1">特性1</option><option value="2">特性2</option></select></div>
     <div class="field"><label>持有物 ID</label><input id="qItem" type="number" min="0" max="65535" value="0"></div>
+    <div class="field"><label>球種 ID</label><input id="qBall" type="number" min="1" max="25" value="4"></div>
+    <div class="field"><label>親密度</label><input id="qFriend" type="number" min="0" max="255" value="70"></div>
+    <div class="field"><label>OT 名稱</label><input id="qOT" maxlength="7" placeholder="使用存檔玩家"></div>
   </div>
   <div class="actions">
     <label class="pill"><input id="qShiny" type="checkbox"> ✨ 閃光</label>
     <label class="pill"><input id="q6v" type="checkbox" checked> 6V</label>
     <label class="pill"><input id="qMaxEV" type="checkbox"> 252/252/6 EV</label>
+    <label class="pill"><input id="qEgg" type="checkbox"> 🥚 蛋</label>
     <button class="btn primary" type="button" onclick="quickGenerate()">⚡ 建立並寫入</button>
   </div>
-  <div class="hint">建立後會立即重新解密驗證 Species、Checksum 與目標位置。</div>
+  <div class="hint">建立後可在 Pokémon Editor 進一步修改招式、IV、EV、性格、特性、持有物、OT、暱稱與其他 Gen4 欄位。</div>
+</div>
+<div class="pkx-actionbar" style="display:flex;gap:5px;flex-wrap:wrap;margin:8px 0">
+  <button class="btn" type="button" onclick="duplicateSelected()">📋 複製</button>
+  <button class="btn" type="button" onclick="pasteSelected()">📥 貼上</button>
+  <button class="btn" type="button" onclick="clearSelected()">🗑 清空</button>
+  <button class="btn" type="button" onclick="make6VSelected()">⭐ 6V</button>
+  <button class="btn" type="button" onclick="makeShinySelected()">✨ 閃光</button>
+  <button class="btn" type="button" onclick="setLevelSelected(100)">Lv.100</button>
 </div>
 <div id="app" class="hidden"><div class="tabs"><button class="btn tab active" data-tab="party">⚔️ 隊伍</button><button class="btn tab" data-tab="boxes">📦 PC盒子</button><button class="btn tab" data-tab="trainer">👤 玩家</button><button class="btn tab" data-tab="bag">🎒 背包</button></div><section id="party"></section><section id="boxes" class="hidden"></section><section id="trainer" class="hidden"></section><section id="bag" class="hidden"></section></div></div>
 <script>
@@ -214,7 +218,13 @@ function quickGenerate(){
     w16(pk,12,u16(data,0x74)); w16(pk,14,u16(data,0x76));
     pk[0x14]=70;
     var ids=speciesAbilities[sid]||[], abilIndex=$('#qAbility').value==='2'?1:0, ability=ids[abilIndex]||ids[0]||0;
-    pk[0x15]=ability;
+    
+pk[0x15]=ability;
+pk[0x16]=0;
+pk[0x17]=2;
+pk[0x14]=Math.max(0,Math.min(255,+$('#qFriend').value||70));
+pk[0x19]=Math.max(0,Math.min(255,+$('#qBall').value||4));
+
     var ev=maxev?[252,252,0,0,0,6]:[0,0,0,0,0,0];
     for(var j=0;j<6;j++)pk[0x18+j]=ev[j];
     var ivv=sixv?31:0, ivWord=ivv|(ivv<<5)|(ivv<<10)|(ivv<<15)|(ivv<<20)|(ivv<<25);
@@ -232,6 +242,52 @@ function quickGenerate(){
     render(); show(t==='box'?'boxes':'party');
     msg('已建立 '+speciesName(sid)+' #'+sid+'｜Lv.'+level+(shinyOn?'｜✨閃光':'')+(sixv?'｜6V':''));
   }catch(e){msg(e&&e.message?e.message:'建立失敗。',false)}
+}
+
+var clipboardPK4=null;
+function selectedPK(){
+  if(!data)return null;
+  var t=sel.type==='box'?'box':sel.type;
+  var p=getPK(t,sel.i,0);
+  return present(p)?p:null;
+}
+function duplicateSelected(){
+  var p=selectedPK(); if(!p){msg('請先選擇一隻寶可夢。',false);return}
+  clipboardPK4=p.slice(); msg('已複製寶可夢。');
+}
+function pasteSelected(){
+  if(!clipboardPK4){msg('剪貼簿沒有寶可夢。',false);return}
+  var t=sel.type==='box'?'box':sel.type;
+  setPK(t,sel.i,clipboardPK4.slice(),t==='party'?levelFromPK(clipboardPK4):null);
+  if(t==='party'){data[0x94]=Math.max(data[0x94],sel.i+1);data[PS+0x94]=data[0x94]}else setBoxFlags();
+  saveBothChecksums();render();msg('已貼上寶可夢。');
+}
+function clearSelected(){
+  var t=sel.type==='box'?'box':sel.type;
+  setPK(t,sel.i,new Uint8Array(136),t==='party'?1:null);
+  if(t==='party'){var n=0;for(var j=0;j<6;j++)if(present(getPK('party',j,0)))n=j+1;data[0x94]=n;data[PS+0x94]=n}else setBoxFlags();
+  saveBothChecksums();render();msg('已清空目前位置。');
+}
+function make6VSelected(){
+  var p=selectedPK();if(!p){msg('請先選擇寶可夢。',false);return}
+  var v=(31)|(31<<5)|(31<<10)|(31<<15)|(31<<20)|(31<<25);w32(p,0x38,v>>>0);fixPK(p);
+  var t=sel.type==='box'?'box':sel.type;setPK(t,sel.i,p,t==='party'?levelFromPK(p):null);saveBothChecksums();render();msg('已設定 6V。');
+}
+function makeShinySelected(){
+  var p=selectedPK();if(!p){msg('請先選擇寶可夢。',false);return}
+  var sp=species(p),ids=speciesAbilities[sp]||[],slot=Math.max(0,ids.indexOf(p[0x15]&255));if(slot>1)slot=0;
+  var nat=natureIndex(p);if(!syncNatureAbilityPID(p,nat,slot,true)){msg('閃光 PID 生成失敗。',false);return}
+  fixPK(p);var t=sel.type==='box'?'box':sel.type;setPK(t,sel.i,p,t==='party'?levelFromPK(p):null);saveBothChecksums();render();msg('已設定閃光。');
+}
+function setLevelSelected(level){
+  var p=selectedPK();if(!p){msg('請先選擇寶可夢。',false);return}
+  var sp=species(p);w32(p,0x10,expForLevel(growthRate(sp),level)>>>0);fixPK(p);
+  var t=sel.type==='box'?'box':sel.type;setPK(t,sel.i,p,t==='party'?level:null);saveBothChecksums();render();msg('已設定 Lv.'+level+'。');
+}
+function levelFromPK(p){
+  var exp=u32(p,0x10),sp=species(p),rate=growthRate(sp);
+  for(var l=1;l<=100;l++)if(exp<=expForLevel(rate,l))return l;
+  return 100;
 }
 function render(){buildQuickBoxList();buildQuickNatureList();toggleQuickDest();renderParty();renderBoxes();renderTrainer();renderBag();hydrateResources()}
 function renderParty(){var count=data[0x94];var h=`<div class="card"><div class="row"><div><b>目前隊伍</b><div class="muted small">${count} / 6 隻</div></div><span class="pill">HGSS 512 KB</span></div><div class="slotgrid" style="margin-top:10px">`;for(var i=0;i<6;i++){var pk=getPK('party',i,0),s=species(pk),exists=present(pk);h+=`<button class="slot ${sel.type==='party'&&sel.i===i?'sel':''}" onclick="pick('party',${i})">${exists?`<img class="slotimg" src="${spriteUrl(s,shiny(pk))}" onerror="this.style.visibility='hidden'">`:''}<b>第 ${i+1} 格</b><br>${exists?speciesName(s):'空位'}<br><span class="muted small">${exists?'#'+s+(shiny(pk)?' · ✨':''):''}</span></button>`}h+='</div></div>';if(sel.type==='party')h+=editor('party',sel.i);$('#party').innerHTML=h}
@@ -276,4 +332,7 @@ document.getElementById('file').addEventListener('change',function(e){var f=e.ta
 $('#reset').onclick=()=>{if(original){data=original.slice();render();msg('已還原到載入時的原始存檔。')}};
 $('#export').onclick=()=>{if(!data)return;saveBothChecksums();var blob=new Blob([data],{type:'application/octet-stream'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);var ext=fileName.toLowerCase().endsWith('.dsv')?'.dsv':'.sav';a.download='promax_HGSS_v24_edited'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);msg('已匯出 promax_HGSS_v24_edited'+ext+'。請保留原始存檔備份。')};
 function msg(s,ok=true){$('#status').textContent=s;$('#status').classList.toggle('ok',ok);}
-</script></body></html>
+</script><div class="hint" style="max-width:1180px;margin:12px auto;padding:0 10px">
+      v28 功能：HGSS Save / 18×30 Storage / Party / Trainer / Bag / PK4 / PID / Checksum / Species / Ability / Item / Moves / Nature / IV / EV / Level / Shiny / Copy-Paste / 6V / 一鍵建立。
+      本工具為 PKHeX Core 規格取向的瀏覽器實作，不是官方 PKHeX。
+    </div></body></html>
