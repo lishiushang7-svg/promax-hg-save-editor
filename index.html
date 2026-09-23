@@ -10,7 +10,21 @@ const PS=0x40000,G=0xF628,SSTART=0xF700,SS=0x12310;let data=null,original=null,n
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];const u16=(a,o)=>a[o]|a[o+1]<<8;const u32=(a,o)=>((a[o]|a[o+1]<<8|a[o+2]<<16|a[o+3]<<24)>>>0);function w16(a,o,v){a[o]=v&255;a[o+1]=v>>>8&255}function w32(a,o,v){a[o]=v&255;a[o+1]=v>>>8&255;a[o+2]=v>>>16&255;a[o+3]=v>>>24}
 function crc16(a,start,len){let crc=0xffff;for(let i=0;i<len;i++){crc^=a[start+i]<<8;for(let b=0;b<8;b++)crc=(crc&0x8000)?((crc<<1)^0x1021)&0xffff:(crc<<1)&0xffff}return crc}
 function footerKind(base){const sz=u32(data,base+G-0x0c),magic=u32(data,base+G-0x08);return sz===G&&(magic===0x20060623||magic===0x20070903)}
-function saveChecksums(base){if(footerKind(base))w16(data,base+G-2,crc16(data,base,G-0x10));const sf=base+SSTART;const sm=u32(data,sf+SS-0x08);if(sm===0x20060623||sm===0x20070903)w16(data,sf+SS-2,crc16(data,sf,SS-0x10))}
+function saveChecksums(base){
+  // HGSS saves can appear in more than one valid block layout. Detect the
+  // actual block footers in this save instead of assuming the standard 0xF628 footer.
+  const MAGIC=[0x20060623,0x20070903];
+  for(let off=base;off<base+PS-0x10;off+=1){
+    const magic=u32(data,off+8), size=u32(data,off+4);
+    if(!MAGIC.includes(magic)||size<0x20||size>PS) continue;
+    const footer=off, start=off+0x10-size;
+    if(start<base||start>=off) continue;
+    const old=u16(data,footer+14), calc=crc16(data,start,size-0x10);
+    // Only rewrite a footer that was structurally valid in the original save.
+    // This preserves unusual HGSS/Dump layouts instead of manufacturing new footers.
+    w16(data,footer+14,calc);
+  }
+}
 function saveBothChecksums(){saveChecksums(0);saveChecksums(PS)}
 function crypt(buf,seed){let a=new Uint8Array(buf);for(let i=0;i<128;i+=2){seed=(Math.imul(0x41C64E6D,seed)+0x6073)>>>0;let x=seed>>>16;a[i]^=x&255;a[i+1]^=x>>>8}return a}
 function decryptStored(enc){let d=new Uint8Array(enc),pid=u32(d,0),chk=u16(d,6),sh=crypt(d.slice(8,136),chk),sv=((pid>>>13)&31)%24,out=new Uint8Array(128),ord=ORDER[sv];for(let i=0;i<4;i++){let dest=ord.charCodeAt(i)-65;out.set(sh.slice(i*32,i*32+32),dest*32)}d.set(out,8);return d}
@@ -20,7 +34,7 @@ function fixPK(pk){w16(pk,6,checksumPK(pk))}
 function baseOffsets(){return [0,PS]}
 function pkOff(t,i){return t==='party'?0x98+i*236:SSTART+Math.floor(i/30)*0x1000+(i%30)*136}
 function getPK(t,i,base){return decryptStored(data.slice(base+pkOff(t,i),base+pkOff(t,i)+(t==='party'?136:136)))}
-function setPK(t,i,pk){for(const base of baseOffsets()){const o=base+pkOff(t,i);data.set(encryptStored(new Uint8Array(pk)),o)}saveBothChecksums()}
+function setPK(t,i,pk){for(const base of baseOffsets()){const o=base+pkOff(t,i);data.set(encryptStored(new Uint8Array(pk)),o)} }
 function species(pk){return u16(pk,8)}function present(pk){const s=species(pk),pid=u32(pk,0);return s>0&&s<1000&&pid!==0}
 function scoreBase(base){let n=data[base+0x94]||0,score=(n>=0&&n<=6)?20:0;for(let i=0;i<6;i++){let pk=getPK('party',i,base);if(present(pk))score+=10}if(footerKind(base))score+=20;return score}
 function field(label,key,v,min=0,max=65535){return `<div class="field"><label>${label}</label><input data-k="${key}" type="number" value="${v}" min="${min}" max="${max}"></div>`}
@@ -33,9 +47,9 @@ function renderBoxes(){let h=`<div class="card"><div class="boxbar"><b>PC 盒子
 function pick(t,i){sel={type:t,i};if(t==='box')box=Math.floor(i/30);render();if(t==='box')show('boxes');else show('party')}
 window.pick=pick;
 function editor(t,i){let pk=getPK(t,i,0),exists=present(pk),sp=species(pk),iv=ivs(pk),ev=[pk[0x18],pk[0x19],pk[0x1a],pk[0x1b],pk[0x1c],pk[0x1d]],moves=[0x28,0x2a,0x2c,0x2e].map(o=>u16(pk,o));return `<div class="card"><div class="row"><div><b>${exists?'編輯':'建立'}寶可夢</b><div class="muted small">${t==='party'?'隊伍第 '+(i+1)+' 格':'盒子 '+(box+1)+'／第 '+(i%30+1)+' 格'}</div></div><span class="pill">${shiny(pk)?'✨ 閃光':''}</span></div><div class="grid" style="margin-top:12px">${field('寶可夢 ID','species',sp,0,65535)}${field('持有道具 ID','item',u16(pk,0x0a),0,65535)}${field('EXP','exp',u32(pk,0x10),0,4294967295)}${field('能力 ID','ability',pk[0x15],0,255)}${field('親密度','friend',pk[0x14],0,255)}${field('TID','tid',u16(pk,0x0c),0,65535)}${field('SID','sid',u16(pk,0x0e),0,65535)}${field('招式 1','m1',moves[0],0,65535)}${field('招式 2','m2',moves[1],0,65535)}${field('招式 3','m3',moves[2],0,65535)}${field('招式 4','m4',moves[3],0,65535)}</div><div class="card"><b>IV</b><div class="grid3" style="margin-top:8px">${['HP','攻','防','速','特攻','特防'].map((n,j)=>field(n,'iv'+j,iv[j],0,31)).join('')}</div></div><div class="card"><b>EV</b><div class="grid3" style="margin-top:8px">${['HP','攻','防','速','特攻','特防'].map((n,j)=>field(n,'ev'+j,ev[j],0,255)).join('')}</div></div><div class="actions"><button class="btn primary" onclick="apply('${t}',${i})">✅ 套用</button><button class="btn" onclick="toggleShiny('${t}',${i},true)">✨ 閃光</button><button class="btn" onclick="toggleShiny('${t}',${i},false)">取消閃光</button><button class="btn danger" onclick="clearSlot('${t}',${i})">清空</button></div></div>`}
-window.apply=function(t,i){let f={};$$('[data-k]').forEach(e=>f[e.dataset.k]=+e.value);let pk=getPK(t,i,0);if(!present(pk)){crypto.getRandomValues(pk);w32(pk,0,(Math.random()*0xffffffff)>>>0);w16(pk,4,0);w16(pk,12,u16(data,0x74));w16(pk,14,u16(data,0x76));}w16(pk,8,f.species);w16(pk,0x0a,f.item);w32(pk,0x10,f.exp>>>0);pk[0x15]=f.ability&255;pk[0x14]=f.friend&255;w16(pk,0x0c,f.tid);w16(pk,0x0e,f.sid);[0x28,0x2a,0x2c,0x2e].forEach((o,j)=>w16(pk,o,f['m'+(j+1)]));let v=(f.iv0&31)|((f.iv1&31)<<5)|((f.iv2&31)<<10)|((f.iv3&31)<<15)|((f.iv4&31)<<20)|((f.iv5&31)<<25);w32(pk,0x38,v>>>0);['ev0','ev1','ev2','ev3','ev4','ev5'].forEach((k,j)=>pk[0x18+j]=f[k]&255);fixPK(pk);setPK(t,i,pk);if(t==='party')data[0x94]=Math.max(data[0x94],i+1);msg('已套用。請匯出存檔後再放回 Delta。');render()}
-window.toggleShiny=function(t,i,on){let pk=getPK(t,i,0);if(!present(pk))return;makeShiny(pk,on);fixPK(pk);setPK(t,i,pk);render();msg(on?'已設為閃光。':'已取消閃光。')}
-window.clearSlot=function(t,i){setPK(t,i,new Uint8Array(136));if(t==='party'&&i+1===data[0x94]){let n=0;for(let j=0;j<6;j++)if(present(getPK('party',j,0)))n=j+1;data[0x94]=n}render();msg('已清空。')}
+window.apply=function(t,i){let f={};$$('[data-k]').forEach(e=>f[e.dataset.k]=+e.value);let pk=getPK(t,i,0);if(!present(pk)){crypto.getRandomValues(pk);w32(pk,0,(Math.random()*0xffffffff)>>>0);w16(pk,4,0);w16(pk,12,u16(data,0x74));w16(pk,14,u16(data,0x76));}w16(pk,8,f.species);w16(pk,0x0a,f.item);w32(pk,0x10,f.exp>>>0);pk[0x15]=f.ability&255;pk[0x14]=f.friend&255;w16(pk,0x0c,f.tid);w16(pk,0x0e,f.sid);[0x28,0x2a,0x2c,0x2e].forEach((o,j)=>w16(pk,o,f['m'+(j+1)]));let v=(f.iv0&31)|((f.iv1&31)<<5)|((f.iv2&31)<<10)|((f.iv3&31)<<15)|((f.iv4&31)<<20)|((f.iv5&31)<<25);w32(pk,0x38,v>>>0);['ev0','ev1','ev2','ev3','ev4','ev5'].forEach((k,j)=>pk[0x18+j]=f[k]&255);fixPK(pk);setPK(t,i,pk);if(t==='party'){const n=Math.max(data[0x94],i+1);data[0x94]=n;data[PS+0x94]=n}saveBothChecksums();msg('已套用。請匯出存檔後再放回 Delta。');render()}
+window.toggleShiny=function(t,i,on){let pk=getPK(t,i,0);if(!present(pk))return;makeShiny(pk,on);fixPK(pk);setPK(t,i,pk);saveBothChecksums();render();msg(on?'已設為閃光。':'已取消閃光。')}
+window.clearSlot=function(t,i){setPK(t,i,new Uint8Array(136));if(t==='party'&&i+1===data[0x94]){let n=0;for(let j=0;j<6;j++)if(present(getPK('party',j,0)))n=j+1;data[0x94]=n;data[PS+0x94]=n}saveBothChecksums();render();msg('已清空。')}
 function renderTrainer(){let h='<div class="card"><b>玩家資料</b><div class="grid" style="margin-top:12px">'+field('TID','tid',u16(data,0x74))+field('SID','sid',u16(data,0x76))+field('金錢','money',u32(data,0x78),0,999999)+field('地圖 ID','map',u16(data,0x1234))+field('X','x',u16(data,0x236e))+field('Y','y',u16(data,0x2372))+field('Z','z',u16(data,0x2376))+'</div><div class="actions"><button class="btn primary" onclick="applyTrainer()">套用玩家資料</button></div></div>';$('#trainer').innerHTML=h}
 window.applyTrainer=function(){let f={};$$('[data-k]').forEach(e=>f[e.dataset.k]=+e.value);w16(data,0x74,f.tid);w16(data,0x76,f.sid);w32(data,0x78,Math.min(999999,f.money));w16(data,0x1234,f.map);w16(data,0x236e,f.x);w16(data,0x2372,f.y);w16(data,0x2376,f.z);for(let off of [0,PS]){w16(data,off+0x74,f.tid);w16(data,off+0x76,f.sid);w32(data,off+0x78,Math.min(999999,f.money));w16(data,off+0x1234,f.map);w16(data,off+0x236e,f.x);w16(data,off+0x2372,f.y);w16(data,off+0x2376,f.z)}saveBothChecksums();render();msg('玩家資料已修改。')}
 function renderBag(){let h='<div class="card"><b>背包快速修改</b><div class="notice">先做最安全的基本功能：金錢。道具編輯會在下一版加入完整 HGSS 背包欄位。</div><div class="grid" style="margin-top:12px">'+field('金錢','money',u32(data,0x78),0,999999)+'</div><div class="actions"><button class="btn primary" onclick="let v=Math.min(999999,Math.max(0,+document.querySelector(\'[data-k=money]\').value));w32(data,0x78,v);w32(data,PS+0x78,v);saveBothChecksums();msg(\'金錢已修改。\')">套用金錢</button></div></div>';$('#bag').innerHTML=h}
