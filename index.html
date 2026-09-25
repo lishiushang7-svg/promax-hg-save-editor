@@ -10,7 +10,7 @@
 
 var BLOCK_POSITION=[0,1,2,3,0,1,3,2,0,2,1,3,0,3,1,2,0,2,3,1,0,3,2,1,1,0,2,3,1,0,3,2,2,0,1,3,3,0,1,2,2,0,3,1,3,0,2,1,1,2,0,3,1,3,0,2,2,1,0,3,3,1,0,2,2,3,0,1,3,2,0,1,1,2,3,0,1,3,2,0,2,1,3,0,3,2,1,0,0,1,2,3,0,1,3,2,0,2,1,3,0,3,1,2,0,2,3,1,0,3,2,1,1,0,2,3,1,0,3,2];
 var BLOCK_INVERT=[0,1,2,4,3,5,6,7,12,18,13,19,8,10,14,20,16,22,9,11,15,21,17,23,0,1,2,4,3,5,6,7];
-var PS=0x40000,G=0xF628,SSTART=0xF700,PCSTART=SSTART,SS=0x12310;var data=null,original=null,fileName='promax.dsv',sel={type:'party',i:0},box=0;
+var PS=0x40000,G=0xF628,SSTART=0xF700,PCSTART=0xC104,SS=0x12310;var data=null,original=null,fileName='promax.dsv',sel={type:'party',i:0},box=0;
 var $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];var u16=(a,o)=>a[o]|a[o+1]<<8;var u32=(a,o)=>((a[o]|a[o+1]<<8|a[o+2]<<16|a[o+3]<<24)>>>0);function w16(a,o,v){a[o]=v&255;a[o+1]=v>>>8&255}function w32(a,o,v){a[o]=v&255;a[o+1]=v>>>8&255;a[o+2]=v>>>16&255;a[o+3]=v>>>24}
 function crc16(a,start,len){var crc=0xffff;for(var i=0;i<len;i++){crc^=a[start+i]<<8;for(var b=0;b<8;b++)crc=(crc&0x8000)?((crc<<1)^0x1021)&0xffff:(crc<<1)&0xffff}return crc}
 function footerKind(base){var sz=u32(data,base+G-0x0c),magic=u32(data,base+G-0x08);return sz===G&&(magic===0x20060623||magic===0x20070903)}
@@ -433,30 +433,46 @@ document.addEventListener('change',async function(e){
 })
 Promise.all([loadNames(),loadResources()]).then(()=>{buildSpeciesList();buildResourceLists()});
 function show(t){$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));for(var id of ['party','boxes','trainer','bag'])$('#'+id).classList.toggle('hidden',id!==t)}$$('.tab').forEach(b=>b.onclick=()=>show(b.dataset.tab));
-var fileLoadToken=0;
+var loadSerial=0;
 document.getElementById('file').addEventListener('change',function(e){
-var input=e.target;
-var f=input.files&&input.files[0];
-if(!f)return;
-var token=++fileLoadToken;
-fileName=f.name;
-data=null;
-original=null;
-document.getElementById('app').classList.add('hidden');
-document.getElementById('export').disabled=true;
-document.getElementById('reset').disabled=true;
-msg('正在讀取 '+fileName+'…');
-var reader=new FileReader();
-reader.onerror=function(){
-  if(token!==fileLoadToken)return;
-  msg('載入失敗：iPhone 無法讀取這個檔案。',false);
-  input.value='';
-};
-reader.onload=function(){try{
-  if(token!==fileLoadToken)return;var buf=reader.result;if(!buf||buf.byteLength!==0x80000){msg('目前這版要求 512 KB HGSS 存檔；你選到的是 '+(buf?Math.round(buf.byteLength/1024):0)+' KB。');return}data=new Uint8Array(buf);original=new Uint8Array(buf.slice(0));if(!cryptoRoundTripTest()){msg('Gen4 寶可夢加解密自我測試失敗，未載入存檔。',false);return}if(scoreBase(0)<20&&scoreBase(PS)<20){msg('這個檔案不像 HGSS 512 KB 存檔。');return}document.getElementById('app').classList.remove('hidden');document.getElementById('export').disabled=false;document.getElementById('reset').disabled=false;sel={type:'party',i:0};Promise.all([loadNames(),loadResources()]).then(function(){buildSpeciesList();buildResourceLists();render();msg('已載入 '+fileName+'。已套用 SoulSilver ROM 對照資料：特性／基礎能力／招式 PP／道具資料。隊伍數量：'+data[0x94]+'。')}).catch(function(err){msg('資料名稱載入失敗：'+(err&&err.message?err.message:'未知錯誤'));buildSpeciesList();buildResourceLists();render()});}catch(err){msg('載入失敗：'+(err&&err.message?err.message:'未知錯誤'));}};reader.readAsArrayBuffer(f);});
+  var input=e.target, f=input.files&&input.files[0];
+  if(!f)return;
+  var serial=++loadSerial;
+  // Immediately discard the previous in-memory save so a failed/new load can never show old data.
+  data=null; original=null;
+  $('#app').classList.add('hidden'); $('#export').disabled=true; $('#reset').disabled=true;
+  fileName=f.name;
+  msg('正在讀取：'+f.name+'（'+Math.round(f.size/1024)+' KB）…');
+  var reader=new FileReader();
+  reader.onerror=function(){if(serial!==loadSerial)return;msg('載入失敗：iPad 無法讀取這個檔案。',false);input.value=''};
+  reader.onload=function(){
+    if(serial!==loadSerial)return;
+    try{
+      var buf=reader.result;
+      if(!buf){msg('讀取失敗：沒有取得檔案內容。',false);return}
+      if(buf.byteLength!==0x80000){msg('檔案大小錯誤：需要 512 KB，實際是 '+(buf.byteLength/1024).toFixed(1)+' KB。請確認選的是遊戲的 HGSS 存檔，而不是 ZIP／備份檔。',false);return}
+      var fresh=new Uint8Array(buf);
+      data=fresh; original=fresh.slice();
+      if(!cryptoRoundTripTest()){data=null;original=null;msg('Gen4 PK4 加解密自我測試失敗。',false);return}
+      var s0=scoreBase(0),s1=scoreBase(PS);
+      if(s0<20&&s1<20){data=null;original=null;msg('這個檔案未通過 HGSS 存檔辨識（兩個存檔區都不像有效資料）。',false);return}
+      document.getElementById('app').classList.remove('hidden');document.getElementById('export').disabled=false;document.getElementById('reset').disabled=false;sel={type:'party',i:0};box=0;
+      Promise.all([loadNames(),loadResources()]).then(function(){
+        if(serial!==loadSerial)return;
+        buildSpeciesList();buildResourceLists();render();
+        msg('已重新讀取「'+fileName+'」｜'+(f.size/1024).toFixed(0)+' KB｜隊伍：'+data[0x94]+' 隻｜存檔區：'+(s0>=20?'A':'B'));
+      }).catch(function(err){
+        if(serial!==loadSerial)return;
+        buildSpeciesList();buildResourceLists();render();msg('存檔已讀取，但名稱資料載入失敗：'+(err&&err.message?err.message:'未知錯誤'),false);
+      });
+    }catch(err){data=null;original=null;msg('載入失敗：'+(err&&err.message?err.message:'未知錯誤'),false)}
+    finally{input.value=''}
+  };
+  reader.readAsArrayBuffer(f);
+});
 
 $('#reset').onclick=()=>{if(original){data=original.slice();render();msg('已還原到載入時的原始存檔。')}};
-$('#export').onclick=()=>{if(!data)return;saveBothChecksums();var blob=new Blob([data],{type:'application/octet-stream'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);var ext=fileName.toLowerCase().endsWith('.dsv')?'.dsv':'.sav';a.download=(fileName.replace(/\.(dsv|sav)$/i,'')||'HGSS')+'_edited'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);msg('已匯出 '+a.download+'。請保留原始存檔備份。')};
+$('#export').onclick=()=>{if(!data)return;saveBothChecksums();var blob=new Blob([data],{type:'application/octet-stream'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);var ext=fileName.toLowerCase().endsWith('.dsv')?'.dsv':'.sav';a.download='印魚編輯器_edited'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);msg('已匯出 印魚編輯器_edited'+ext+'。請保留原始存檔備份。')};
 function msg(s,ok=true){$('#status').textContent=s;$('#status').classList.toggle('ok',ok);}
 
 </script></body></html>
