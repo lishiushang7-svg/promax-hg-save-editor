@@ -70,9 +70,36 @@ function saveChecksums(base){
 }
 function saveBothChecksums(){saveChecksums(0);saveChecksums(PS)}
 function crypt(buf,seed){var a=new Uint8Array(buf);for(var i=0;i<a.length;i+=2){seed=(Math.imul(0x41C64E6D,seed)+0x6073)>>>0;var x=seed>>>16;var v=a[i]|(a[i+1]<<8);v^=x;a[i]=v&255;a[i+1]=(v>>>8)&255}return a}
-function shuffleBlocks(buf,sv){var a=new Uint8Array(buf),perm=[0,1,2,3],slot=[0,1,2,3],desireds=BLOCK_POSITION.slice(sv*4,sv*4+4);for(var i=0;i<3;i++){var desired=desireds[i],j=slot[desired];if(j===i)continue;var aa=i*32,bb=j*32,tmp=a.slice(aa,aa+32);a.copyWithin(aa,bb,bb+32);a.set(tmp,bb);var blockAtI=perm[i];perm[j]=blockAtI;slot[blockAtI]=j}return a}
-function decryptStored(enc){var d=new Uint8Array(enc);var allZero=true;for(var z=0;z<136;z++){if(d[z]!==0){allZero=false;break}}if(allZero)return d;var pid=u32(d,0),chk=u16(d,6),sv=(pid>>>13)&31;d.set(shuffleBlocks(crypt(d.slice(8,136),chk),sv),8);return d}
-function encryptStored(dec){var d=new Uint8Array(dec),pid=u32(d,0),chk=u16(d,6),sv=(pid>>>13)&31;var sh=shuffleBlocks(d.slice(8,136),BLOCK_INVERT[sv]);d.set(crypt(sh,chk),8);return d}
+function shuffleBlocks(buf,sv){
+  // Gen4 block order: use a direct permutation instead of the previous
+  // in-place swap implementation. This matches PKHeX's BlockPosition table
+  // and guarantees the decrypt/encrypt operations are true inverses.
+  var a=new Uint8Array(buf), out=new Uint8Array(128);
+  var order=BLOCK_POSITION.slice((sv%24)*4,(sv%24)*4+4);
+  for(var i=0;i<4;i++) out.set(a.slice(order[i]*32,order[i]*32+32),i*32);
+  return out;
+}
+function unshuffleBlocks(buf,sv){
+  var a=new Uint8Array(buf), out=new Uint8Array(128);
+  var order=BLOCK_POSITION.slice((sv%24)*4,(sv%24)*4+4);
+  for(var i=0;i<4;i++) out.set(a.slice(i*32,i*32+32),order[i]*32);
+  return out;
+}
+function decryptStored(enc){
+  var d=new Uint8Array(enc);
+  var allZero=true;
+  for(var z=0;z<136;z++){if(d[z]!==0){allZero=false;break}}
+  if(allZero)return d;
+  var pid=u32(d,0),chk=u16(d,6),sv=(pid>>>13)&31;
+  d.set(unshuffleBlocks(crypt(d.slice(8,136),chk),sv),8);
+  return d;
+}
+function encryptStored(dec){
+  var d=new Uint8Array(dec),pid=u32(d,0),chk=u16(d,6),sv=(pid>>>13)&31;
+  var sh=unshuffleBlocks(d.slice(8,136),sv);
+  d.set(crypt(sh,chk),8);
+  return d;
+}
 function decryptPartyStats(raw,pid){return crypt(raw,pid)}
 function encryptPartyStats(raw,pid){return crypt(raw,pid)}
 function checksumPK(pk){var s=0;for(var o=8;o<136;o+=2)s=(s+u16(pk,o))&65535;return s}function cryptoRoundTripTest(){
